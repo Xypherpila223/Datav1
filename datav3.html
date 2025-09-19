@@ -99,4 +99,64 @@
 
       svg.append("g")
         .attr("id", "x-axis")
-        .attr("transf
+        .attr("transform", `translate(0, ${height - padding})`)
+        .call(xAxis);
+
+      svg.append("g")
+        .attr("id", "y-axis")
+        .attr("transform", `translate(${padding}, 0)`)
+        .call(yAxis);
+
+      // Tooltip
+      const tooltip = d3.select("#tooltip");
+
+      // Cells
+      svg.selectAll(".cell")
+        .data(dataset)
+        .enter()
+        .append("rect")
+        .attr("class", "cell")
+        .attr("x", d => xScale(d.year))
+        .attr("y", d => yScale(d.month))
+        .attr("width", xScale.bandwidth())
+        .attr("height", yScale.bandwidth())
+        .attr("data-month", d => d.month - 1)
+        .attr("data-year", d => d.year)
+        .attr("data-temp", d => baseTemp + d.variance)
+        .attr("fill", d => colorScale(baseTemp + d.variance))
+        .on("mouseover", (event, d) => {
+          tooltip.style("visibility", "visible")
+                 .attr("data-year", d.year)
+                 .html(`${d.year} - ${d3.timeFormat("%B")(new Date(0, d.month - 1))}<br>
+                        Temp: ${(baseTemp + d.variance).toFixed(2)}℃<br>
+                        Variance: ${d.variance.toFixed(2)}℃`)
+                 .style("left", event.pageX + 10 + "px")
+                 .style("top", event.pageY - 28 + "px");
+        })
+        .on("mouseout", () => tooltip.style("visibility", "hidden"));
+
+      // Legend
+      const legendColors = colorScale.range();
+      const legend = d3.select("#legend");
+
+      legend.selectAll("rect")
+        .data(legendColors)
+        .enter()
+        .append("rect")
+        .attr("width", 40)
+        .attr("height", 20)
+        .attr("fill", d => d);
+
+      legend.selectAll("span")
+        .data(legendColors)
+        .enter()
+        .append("span")
+        .style("margin", "0 5px")
+        .text((d, i) => {
+          const extent = colorScale.invertExtent(d);
+          return `${extent[0].toFixed(1)}–${extent[1].toFixed(1)}℃`;
+        });
+    });
+  </script>
+</body>
+</html>
