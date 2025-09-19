@@ -1,137 +1,99 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Treemap Diagram</title>
+  <title>Movie Treemap with Posters</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f9f9f9;
-    }
-
-    svg {
-      margin-top: 20px;
-      background: white;
-      box-shadow: 0 0 8px rgba(0,0,0,0.2);
-    }
-
-    #title {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-
-    #description {
-      font-size: 16px;
-      margin: 5px 0 15px;
-    }
-
-    .tile {
-      stroke: #fff;
-      stroke-width: 1;
-    }
-
-    #tooltip {
-      position: absolute;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 6px;
-      border-radius: 4px;
-      font-size: 14px;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    #legend {
-      display: flex;
-      justify-content: center;
-      margin-top: 10px;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 14px;
-    }
-
-    .legend-item rect {
-      width: 20px;
-      height: 20px;
-    }
+    body { font-family: Arial; text-align: center; background: #f9f9f9; }
+    svg { margin-top: 20px; background: white; box-shadow: 0 0 8px rgba(0,0,0,0.2); }
+    #title { font-size: 24px; font-weight: bold; margin-top: 20px; }
+    #description { font-size: 16px; margin: 5px 0 15px; }
+    .tile { stroke: #fff; stroke-width: 1; }
+    #tooltip { position: absolute; background: rgba(0,0,0,0.9); color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; visibility: hidden; pointer-events: none; max-width: 250px; }
+    #legend { display: flex; justify-content: center; margin-top: 10px; gap: 10px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 14px; }
+    .legend-item rect { width: 20px; height: 20px; }
   </style>
 </head>
 <body>
-  <h1 id="title">Movie Sales Treemap</h1>
-  <p id="description">Top movies by worldwide box office revenue</p>
-  <div id="tooltip"></div>
-  <svg width="960" height="600"></svg>
-  <div id="legend"></div>
+<h1 id="title">Movie Treemap with Posters</h1>
+<p id="description">Top movies by worldwide box office revenue (with images)</p>
+<div id="tooltip"></div>
+<svg width="960" height="600"></svg>
+<div id="legend"></div>
 
-  <script>
-    const url = "https://cdn.freecodecamp.org/testable-projects-fcc/data/tree_map/movie-data.json";
-    const svg = d3.select("svg");
-    const width = +svg.attr("width");
-    const height = +svg.attr("height");
-    const tooltip = d3.select("#tooltip");
+<script>
+const svg = d3.select("svg");
+const width = +svg.attr("width");
+const height = +svg.attr("height");
+const tooltip = d3.select("#tooltip");
 
-    d3.json(url).then(data => {
-      const root = d3.hierarchy(data)
-        .sum(d => d.value)
-        .sort((a, b) => b.value - a.value);
+// Free dataset with movie data
+const url = "https://cdn.freecodecamp.org/testable-projects-fcc/data/tree_map/movie-data.json";
 
-      d3.treemap()
-        .size([width, height])
-        .padding(1)
-        (root);
+// TMDb image base URL
+const posterBaseURL = "https://image.tmdb.org/t/p/w200"; // width 200px
 
-      const categories = Array.from(new Set(root.leaves().map(d => d.data.category)));
-      const colorScale = d3.scaleOrdinal()
-        .domain(categories)
-        .range(d3.schemeCategory10);
+// Example poster mapping (we'll just simulate with random images)
+const posterMap = {
+  "The Lion King": "https://i.imgur.com/1bX5QH6.jpg",
+  "Frozen II": "https://i.imgur.com/2X9Xb1F.jpg",
+  "Avengers: Endgame": "https://i.imgur.com/3t9Wb8a.jpg",
+  "Jurassic World": "https://i.imgur.com/4yGft6u.jpg"
+  // add more if needed
+};
 
-      // Draw tiles
-      svg.selectAll("rect")
-        .data(root.leaves())
-        .enter()
-        .append("rect")
-        .attr("class", "tile")
-        .attr("x", d => d.x0)
-        .attr("y", d => d.y0)
-        .attr("width", d => d.x1 - d.x0)
-        .attr("height", d => d.y1 - d.y0)
-        .attr("data-name", d => d.data.name)
-        .attr("data-category", d => d.data.category)
-        .attr("data-value", d => d.data.value)
-        .attr("fill", d => colorScale(d.data.category))
-        .on("mouseover", (event, d) => {
-          tooltip.style("visibility", "visible")
-                 .attr("data-value", d.data.value)
-                 .html(`Name: ${d.data.name}<br>Category: ${d.data.category}<br>Value: ${d.data.value}`)
-                 .style("left", event.pageX + 10 + "px")
-                 .style("top", event.pageY - 28 + "px");
-        })
-        .on("mouseout", () => tooltip.style("visibility", "hidden"));
+d3.json(url).then(data => {
+  const root = d3.hierarchy(data).sum(d => d.value).sort((a,b)=>b.value-a.value);
 
-      // Legend
-      const legend = d3.select("#legend");
-      categories.forEach(cat => {
-        const item = legend.append("div")
-          .attr("class", "legend-item");
+  d3.treemap().size([width, height]).padding(2)(root);
 
-        item.append("rect")
-          .attr("fill", colorScale(cat));
+  const categories = Array.from(new Set(root.leaves().map(d => d.data.category)));
+  const colorScale = d3.scaleOrdinal().domain(categories).range(d3.schemeCategory10);
 
-        item.append("span")
-          .text(cat);
-      });
-    });
-  </script>
+  // Draw tiles
+  const tiles = svg.selectAll(".tile")
+    .data(root.leaves())
+    .enter()
+    .append("g")
+    .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+  tiles.append("rect")
+    .attr("class", "tile")
+    .attr("width", d => d.x1 - d.x0)
+    .attr("height", d => d.y1 - d.y0)
+    .attr("fill", d => colorScale(d.data.category))
+    .attr("data-name", d => d.data.name)
+    .attr("data-category", d => d.data.category)
+    .attr("data-value", d => d.data.value)
+    .on("mouseover", (event,d)=>{
+      tooltip.style("visibility","visible")
+             .attr("data-value", d.data.value)
+             .html(`<strong>${d.data.name}</strong><br>${d.data.category}<br>Revenue: $${d.data.value.toLocaleString()}<br>
+                    <img src="${posterMap[d.data.name] || 'https://via.placeholder.com/100x150'}" width="100"/>`)
+             .style("left", event.pageX + 10 + "px")
+             .style("top", event.pageY - 120 + "px");
+    })
+    .on("mouseout", ()=> tooltip.style("visibility","hidden"));
+
+  // Optional: add text label if tile is big enough
+  tiles.append("text")
+    .attr("x", 4)
+    .attr("y", 14)
+    .text(d => (d.x1-d.x0>60 && d.y1-d.y0>30) ? d.data.name : "")
+    .attr("font-size", "12px")
+    .attr("fill", "#fff");
+
+  // Legend
+  const legend = d3.select("#legend");
+  categories.forEach(cat=>{
+    const item = legend.append("div").attr("class","legend-item");
+    item.append("rect").attr("fill", colorScale(cat));
+    item.append("span").text(cat);
+  });
+});
+</script>
 </body>
 </html>
