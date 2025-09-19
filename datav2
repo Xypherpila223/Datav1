@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scatterplot Graph</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f9f9f9;
+    }
+
+    svg {
+      background: white;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      margin-top: 20px;
+    }
+
+    #title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    .dot {
+      stroke: black;
+    }
+
+    #tooltip {
+      position: absolute;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 14px;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #legend {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title">Doping in Professional Bicycle Racing</h1>
+  <div id="tooltip"></div>
+  <svg width="900" height="500"></svg>
+  <div id="legend">
+    <span style="color: steelblue;">●</span> No Doping Allegations
+    &nbsp;&nbsp;
+    <span style="color: orange;">●</span> Riders with Doping Allegations
+  </div>
+
+  <script>
+    const url = "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json";
+
+    const svg = d3.select("svg");
+    const width = +svg.attr("width");
+    const height = +svg.attr("height");
+    const padding = 60;
+
+    d3.json(url).then(data => {
+      // Convert time strings into Date objects
+      data.forEach(d => {
+        const parsedTime = d.Time.split(":");
+        d.seconds = new Date(1970, 0, 1, 0, parsedTime[0], parsedTime[1]);
+      });
+
+      // Scales
+      const xScale = d3.scaleLinear()
+        .domain([d3.min(data, d => d.Year - 1), d3.max(data, d => d.Year + 1)])
+        .range([padding, width - padding]);
+
+      const yScale = d3.scaleTime()
+        .domain(d3.extent(data, d => d.seconds))
+        .range([padding, height - padding]);
+
+      // Axes
+      const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+      const yAxis = d3.axisLeft(yScale).tickFormat(d3.timeFormat("%M:%S"));
+
+      svg.append("g")
+        .attr("id", "x-axis")
+        .attr("transform", `translate(0, ${height - padding})`)
+        .call(xAxis);
+
+      svg.append("g")
+        .attr("id", "y-axis")
+        .attr("transform", `translate(${padding}, 0)`)
+        .call(yAxis);
+
+      // Tooltip
+      const tooltip = d3.select("#tooltip");
+
+      // Dots
+      svg.selectAll(".dot")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("class", "dot")
+        .attr("cx", d => xScale(d.Year))
+        .attr("cy", d => yScale(d.seconds))
+        .attr("r", 6)
+        .attr("data-xvalue", d => d.Year)
+        .attr("data-yvalue", d => d.seconds.toISOString())
+        .style("fill", d => d.Doping ? "orange" : "steelblue")
+        .on("mouseover", (event, d) => {
+          tooltip.style("visibility", "visible")
+                 .attr("data-year", d.Year)
+                 .html(`${d.Name} (${d.Nationality})<br>Year: ${d.Year}, Time: ${d.Time}<br>${d.Doping ? d.Doping : "No doping allegations"}`)
+                 .style("left", event.pageX + 10 + "px")
+                 .style("top", event.pageY - 28 + "px");
+        })
+        .on("mouseout", () => tooltip.style("visibility", "hidden"));
+    });
+  </script>
+</body>
+</html>
